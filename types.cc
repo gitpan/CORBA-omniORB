@@ -626,14 +626,14 @@ string_to_any (pTHX_ CORBA::Any *res, CORBA::TypeCode *tc, SV *sv)
 static bool
 longlong_to_any (pTHX_ CORBA::Any *res, SV *sv)
 {
-   *res <<= SvLLV (sv);
+   *res <<= (CORBA::LongLong) SvLLV (sv);
    return true;
 }
 
 static bool
 ulonglong_to_any (pTHX_ CORBA::Any *res, SV *sv)
 {
-    *res <<= SvULLV (sv);
+    *res <<= (CORBA::ULongLong) SvULLV (sv);
     return true;
 }
 #endif
@@ -642,7 +642,7 @@ ulonglong_to_any (pTHX_ CORBA::Any *res, SV *sv)
 static bool
 longdouble_to_any (pTHX_ CORBA::Any *res, SV *sv)
 {
-    *res <<= SvLDV (sv);
+    *res <<= (CORBA::LongDouble) SvLDV (sv);
     return true;
 }
 #endif

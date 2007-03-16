@@ -69,6 +69,7 @@ omnithreads/t/test.pl
 omnithreads/t/thread.t
 omnithreads/typemap
 pomni.h
+ppport.h
 README
 README.win32
 server

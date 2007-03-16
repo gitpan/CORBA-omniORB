@@ -116,7 +116,7 @@ WriteMakefile(
     'NAME'          => 'CORBA::omniORB',
     'VERSION_FROM'  => 'omniORB.pm',
     'LIBS'          => $OMNIORBLIBS,   
-    'DEFINE'        => $DEFINE,
+    'DEFINE'        => $DEFINE . " -DHAS_PPPORT_H",
     'INC'           => $OMNIORBINC,
     'OBJECT'        => join (" ", @OBJECTS),
     'OPTIMIZE'      => $OPTIMIZE,

@@ -7,6 +7,10 @@
 #undef shutdown			// Win32 defines such strange macros
 #undef rewind			// Win32 defines such strange macros
 
+#ifdef HAS_PPPORT_H
+#  include "ppport.h"
+#endif
+
 /* FIXME: Boot check screws up with egcs... */
 #undef XS_VERSION_BOOTCHECK
 #define XS_VERSION_BOOTCHECK
@@ -76,7 +80,7 @@ pomni_clone_entry_lock(pTHX)
 			PTR2IV((void *) MY_CXT.entry_lock));
 }
 
-// Return a reference to the entry lock of the current Perl interpreter
+// Return a pointer to the entry lock of the current Perl interpreter
 POmniRatchetLock *
 pomni_entry_lock(pTHX)
 {
@@ -412,14 +416,15 @@ resolve_initial_references (self, id)
 	} else {
 	  // ugly hack
 	  PortableServer::POA_ptr poa = PortableServer::POA::_narrow (obj);
-	  
 	  if (!CORBA::is_nil (poa)) {
+              CORBA::release(poa);
 	      RETVAL = pomni_local_objref_to_sv(aTHX_ obj,
 						"PortableServer::POA");
 	  } else {
 	      PortableServer::Current_ptr current
 		  = PortableServer::Current::_narrow (obj);
 	      if (!CORBA::is_nil (current)) {
+                  CORBA::release(current);
 		  RETVAL = pomni_local_objref_to_sv(aTHX_ obj,
 						    "PortableServer::Current");
 	      } else
@@ -2453,12 +2458,13 @@ DESTROY (self)
     pomni_objref_destroy (aTHX_ self);
     CORBA::release (self);
 
-char*
+char *
 get_value (self)
     DynamicAny::DynFixed self
     CODE:
     DynamicAny::DynFixed_var THIS = DynamicAny::DynFixed::_narrow(self);
-    RETVAL = THIS->get_value();
+    CORBA::String_var string = THIS->get_value();
+    RETVAL = (char *) string;
     OUTPUT:
     RETVAL
 

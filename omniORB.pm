@@ -14,7 +14,7 @@ require CORBA::omniORB::LongDouble;
 
 @ISA = qw(DynaLoader);
 
-$VERSION = '0.8';
+$VERSION = '0.9';
 
 bootstrap CORBA::omniORB $VERSION;
 

@@ -111,7 +111,8 @@ decode_exception (pTHX_
     if (uuex) {
 	// A user exception, check against the possible exceptions for
 	// this call.
-	const char *repoid = (const char *) uuex->exception().type()->id();
+        CORBA::TypeCode_var tc = uuex->exception().type();
+	const char *repoid = (const char *) tc->id();
         CM_DEBUG(("decode_exception():_except_repoid='%s')\n", repoid));
 	if (opr) {
 	    for (unsigned int i = 0 ; i<opr->exceptions.length() ; i++) {
@@ -293,10 +294,12 @@ XS(_pomni_callStub)
 
 	// Get return and inout, and inout parameters
 	I32 return_count = 0;
-    
-	if (req->result()->value()->type()->kind() != CORBA::tk_void) {
+
+        CORBA::Any *result = req->result()->value();
+        CORBA::TypeCode_var result_tc = result->type();
+	if (result_tc->kind() != CORBA::tk_void) {
 	    // FIXME, do the right thing in array and scalar contexts
-	    SV *res = pomni_from_any (aTHX_ req->result()->value());
+	    SV *res = pomni_from_any (aTHX_ result);
 	    if (res)
 		ST(0) = sv_2mortal(res); // we have at least 1 argument
 	    else

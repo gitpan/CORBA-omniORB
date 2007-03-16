@@ -379,26 +379,32 @@ pomni_sv_to_oid (pTHX_ SV *sv)
     return result;
 }
 
-static CORBA::PR_structMember
-_0RL_structmember_PortableServer_mForwardRequest[] = {
-  {"forward_reference", CORBA::TypeCode::PR_Object_tc()}
-};
-
 static void
 init_forward_request (void)
 {
     if (!forward_request_seq) {
+        const char * const name
+            = "PortableServer::ForwardRequest";
+        const char * const id
+            = "IDL:omg.org/PortableServer/ForwardRequest:1.0";
 
 	forward_request_seq = new CORBA::ExcDescriptionSeq;
 	forward_request_seq->length(1);
 
-	(*forward_request_seq) [0].name = "PortableServer::ForwardRequest";
-	(*forward_request_seq) [0].id =
-	    "IDL:omg.org/PortableServer/ForwardRequest:1.0";
-	(*forward_request_seq) [0].defined_in = "IDL:omg.org/PortableServer:1.0";
-	(*forward_request_seq) [0].version = "1.0";
-	(*forward_request_seq) [0].type =
-	    CORBA::TypeCode::PR_exception_tc("IDL:omg.org/PortableServer/ForwardRequest:1.0", "ForwardRequest", _0RL_structmember_PortableServer_mForwardRequest, 1);
+	(*forward_request_seq)[0].name = name;
+	(*forward_request_seq)[0].id = id;
+	(*forward_request_seq)[0].defined_in
+            = "IDL:omg.org/PortableServer:1.0";
+	(*forward_request_seq)[0].version = "1.0";
+
+        CORBA::StructMemberSeq members;
+        members.length(1);
+        members[0].name = CORBA::string_dup("forward_reference");
+        members[0].type = CORBA::TypeCode::_duplicate(CORBA::_tc_Object);
+        members[0].type_def = CORBA::IDLType::_nil();
+        
+	(*forward_request_seq) [0].type
+            = pomni_orb->create_exception_tc(id, name, members);
     }
 }
 
@@ -436,11 +442,16 @@ public:
 	// stack pointer references should we have to grow the stack in
 	// the server context.
 	dSP;
+        ENTER;
+        SAVETMPS;
 	PUSHSTACKi(PERLSI_SIGNAL);
     }
     
     ~POmniPerlServerContext() {
 	dTHXa(server_thx_);
+
+        FREETMPS;
+        LEAVE;
 
 	// Restore the server context's previous stack
 	POPSTACK;
@@ -472,9 +483,6 @@ POmniAdapterActivator::unknown_adapter (PortableServer::POA_ptr parent,
     dTHXa(psc.context());
     dSP;
 
-    ENTER;
-    SAVETMPS;
-
     PUSHMARK(SP);
 
     XPUSHs(sv_2mortal(newRV_inc(perlobj)));
@@ -495,9 +503,6 @@ POmniAdapterActivator::unknown_adapter (PortableServer::POA_ptr parent,
 
 	PUTBACK;
     }
-
-    FREETMPS;
-    LEAVE;
 
     if (exception)
 	throw exception;
@@ -530,9 +535,6 @@ POmniServantActivator::incarnate (const PortableServer::ObjectId& oid,
 
     init_forward_request();
     
-    ENTER;
-    SAVETMPS;
-
     PUSHMARK(SP);
 
     XPUSHs(sv_2mortal(newRV_inc(perlobj)));
@@ -554,12 +556,9 @@ POmniServantActivator::incarnate (const PortableServer::ObjectId& oid,
 
 	PUTBACK;
     }
-
-    FREETMPS;
-    LEAVE;
-
-    if (exception)
+    else {
 	throw exception;
+    }
 
     return retval;
 }
@@ -577,9 +576,6 @@ POmniServantActivator::etherealize (const PortableServer::ObjectId& oid,
     dTHXa(psc.context());
     dSP;
 
-    ENTER;
-    SAVETMPS;
-
     PUSHMARK(SP);
 
     XPUSHs(sv_2mortal(newRV_inc(perlobj)));
@@ -596,9 +592,6 @@ POmniServantActivator::etherealize (const PortableServer::ObjectId& oid,
     PUTBACK;
 
     exception = pomni_call_method (aTHX_ "etherealize", 0, NULL);
-
-    FREETMPS;
-    LEAVE;
 
     if (exception)
 	throw exception;
@@ -618,9 +611,6 @@ POmniServantLocator::preinvoke (const PortableServer::ObjectId& oid,
     dSP;
 
     init_forward_request();
-
-    ENTER;
-    SAVETMPS;
 
     PUSHMARK(SP);
 
@@ -646,12 +636,9 @@ POmniServantLocator::preinvoke (const PortableServer::ObjectId& oid,
 
 	PUTBACK;
     }
-
-    FREETMPS;
-    LEAVE;
-
-    if (exception)
-	throw exception;
+    else {
+        throw exception;
+    }
 
     return retval;
 }
@@ -669,9 +656,6 @@ POmniServantLocator::postinvoke (const PortableServer::ObjectId& oid,
     POmniPerlServerContext psc(this->thx);
     dTHXa(psc.context());
     dSP;
-
-    ENTER;
-    SAVETMPS;
 
     PUSHMARK(SP);
 
@@ -691,10 +675,6 @@ POmniServantLocator::postinvoke (const PortableServer::ObjectId& oid,
     PUTBACK;
 
     exception = pomni_call_method (aTHX_ "postinvoke", 0, NULL);
-
-    FREETMPS;
-    LEAVE;
-
     if (exception)
 	throw exception;
 }
@@ -893,9 +873,6 @@ POmniServant::invoke ( CORBA::ServerRequest_ptr _req )
     if (builtin_invoke (aTHX_ _req))
         return;
 
-    ENTER;
-    SAVETMPS;
-
     // Build an argument list for this method
   
     CORBA::NVList_ptr args = build_args (aTHX_
@@ -961,7 +938,6 @@ POmniServant::invoke ( CORBA::ServerRequest_ptr _req )
         CORBA::UnknownUserException *uuex
 	    = CORBA::UnknownUserException::_downcast(exception);
 	if( uuex ) {
-	    CM_DEBUG(("POmniServant::invoke():exception->_except_repoid()='%s'\n", (const char *) uuex->exception().type()->id()));
 	    ex = uuex->exception();
 	    _req->set_exception (uuex->exception());
 	} else {
@@ -987,7 +963,7 @@ POmniServant::invoke ( CORBA::ServerRequest_ptr _req )
 		CORBA::Any ex;
 		ex <<= marshal_ex;
 		_req->set_exception (ex);
-		goto out;
+                return;
 	    }
 	    stack_index = 2;
 	} else {
@@ -1015,15 +991,10 @@ POmniServant::invoke ( CORBA::ServerRequest_ptr _req )
 		CORBA::Any ex;
 		ex <<= marshal_ex;
 		_req->set_exception (ex);
-		goto out;
+                return;
 	    }
 	}
     }
-
- out:
-    
-    FREETMPS;
-    LEAVE;
 }
 
 CORBA::RepositoryId 
